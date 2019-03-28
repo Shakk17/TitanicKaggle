@@ -16,8 +16,9 @@ g.map(plt.hist, 'Age', bins=20)
 plt.show()
 
 # Drop unnecessary features
-drop_features = ['PassengerId', 'Cabin', 'Name', 'Ticket']
+drop_features = ['Cabin', 'Ticket']
 train = train.drop(drop_features, axis=1)
+train = train.drop(['PassengerId'], axis=1)
 test = test.drop(drop_features, axis=1)
 full_data = [train, test]
 
@@ -37,13 +38,29 @@ for dataset in full_data:
     dataset['Embarked'].fillna(dataset['Embarked'].mode()[0], inplace=True)
     dataset['Fare'].fillna(dataset['Fare'].median(), inplace=True)
 
-# Creation of new features
+# Creation of new features FamilySize and IsAlone
 for dataset in full_data:
     dataset['FamilySize'] = dataset['SibSp'] + dataset['Parch'] + 1
 
 for dataset in full_data:
     dataset['IsAlone'] = 0
     dataset.loc[dataset['FamilySize'] == 1, 'IsAlone'] = 1
+
+# Creation of new feature Title, extracted from Name
+for dataset in full_data:
+    dataset['Title'] = dataset.Name.str.extract(' ([A-Za-z]+)\.', expand=False)
+print(pd.crosstab(train['Title'], train['Sex']))
+for dataset in full_data:
+    dataset['Title'] = dataset['Title'].\
+        replace(['Lady', 'Countess', 'Capt', 'Col', 'Don', 'Dr', 'Major', 'Rev', 'Sir', 'Jonkheer', 'Dona'], 'Rare')
+    dataset['Title'] = dataset['Title'].replace('Mlle', 'Miss')
+    dataset['Title'] = dataset['Title'].replace('Ms', 'Miss')
+    dataset['Title'] = dataset['Title'].replace('Mme', 'Mrs')
+train[['Title', 'Survived']].groupby(['Title'], as_index=False).mean()
+title_mapping = {"Mr": 1, "Miss": 2, "Mrs": 3, "Master": 4, "Rare": 5}
+for dataset in full_data:
+    dataset['Title'] = dataset['Title'].map(title_mapping)
+    dataset['Title'] = dataset['Title'].fillna(0)
 
 # Continuous variable bins
 for dataset in full_data:
@@ -52,12 +69,13 @@ for dataset in full_data:
 
 # Convert objects to categories
 for dataset in full_data:
-    dataset['Sex_Code'] = LabelEncoder().fit_transform(dataset['Sex'])
-    dataset['Embarked_Code'] = LabelEncoder().fit_transform(dataset['Embarked'])
-    dataset['AgeBin_Code'] = LabelEncoder().fit_transform(dataset['AgeBin'])
-    dataset['FareBin_Code'] = LabelEncoder().fit_transform(dataset['FareBin'])
+    dataset['Sex'] = LabelEncoder().fit_transform(dataset['Sex'])
+    dataset['Embarked'] = LabelEncoder().fit_transform(dataset['Embarked'])
+    dataset['Age'] = LabelEncoder().fit_transform(dataset['AgeBin'])
+    dataset['Fare'] = LabelEncoder().fit_transform(dataset['FareBin'])
 
 # Drop unnecessary features
-drop_features = ['Age', 'AgeBin', 'Embarked', 'FamilySize', 'Fare', 'FareBin',
-                 'Parch', 'Sex', 'SibSp']
+drop_features = ['AgeBin', 'FamilySize', 'FareBin', 'Name', 'Parch', 'SibSp']
 train = train.drop(drop_features, axis=1)
+
+
