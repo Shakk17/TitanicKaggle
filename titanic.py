@@ -1,12 +1,12 @@
-import pandas as pd
-import numpy as np
-import sklearn
 import matplotlib.pyplot as plt
+import pandas as pd
 import seaborn as sns
-
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import LabelEncoder
 
 # Load the train and test data
+
 train = pd.read_csv("data/train.csv")
 test = pd.read_csv("data/test.csv")
 
@@ -77,5 +77,43 @@ for dataset in full_data:
 # Drop unnecessary features
 drop_features = ['AgeBin', 'FamilySize', 'FareBin', 'Name', 'Parch', 'SibSp']
 train = train.drop(drop_features, axis=1)
+test = test.drop(drop_features, axis=1)
 
+# Visualize correlation
+colormap = plt.cm.get_cmap()
+plt.figure(figsize=(14,12))
+plt.title('Pearson Correlation of Features', y=1.05, size=15)
+sns.heatmap(train.astype(float).corr(),linewidths=0.1,vmax=1.0,
+            square=True, cmap=colormap, linecolor='white', annot=True)
+plt.show()
 
+# Splitting of data
+train_X = train.drop("Survived", axis=1)
+train_y = train["Survived"]
+test_X = test.drop("PassengerId", axis=1).copy()
+
+# Model choice
+
+# Logistic Regression, measures importance of the features.
+logreg = LogisticRegression(solver='lbfgs')
+logreg.fit(train_X, train_y)
+acc_log = round(logreg.score(train_X, train_y) * 100, 2)
+
+coeff_df = pd.DataFrame(train.columns.delete(0))
+coeff_df.columns = ['Feature']
+coeff_df["Correlation"] = pd.Series(logreg.coef_[0])
+coeff_df.sort_values(by='Correlation', ascending=False)
+print(coeff_df)
+
+# Random Forest
+random_forest = RandomForestClassifier(n_estimators=100)
+random_forest.fit(train_X, train_y)
+pred_y = random_forest.predict(test_X)
+random_forest.score(train_X, train_y)
+acc_random_forest = round(random_forest.score(train_X, train_y) * 100, 2)
+print("Random Forest f-measure: " + str(acc_random_forest))
+
+submission = pd.DataFrame({
+        "PassengerId": test["PassengerId"],
+        "Survived": pred_y
+    })
