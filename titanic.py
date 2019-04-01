@@ -5,8 +5,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import LabelEncoder
 
-# Load the train and test data
 
+# Load the train and test data
 train = pd.read_csv("data/train.csv")
 test = pd.read_csv("data/test.csv")
 
@@ -113,7 +113,8 @@ random_forest.score(train_X, train_y)
 acc_random_forest = round(random_forest.score(train_X, train_y) * 100, 2)
 print("Random Forest f-measure: " + str(acc_random_forest))
 
-submission = pd.DataFrame({
+output = pd.DataFrame({
         "PassengerId": test["PassengerId"],
         "Survived": pred_y
     })
+output.to_csv('submission.csv', index=False)
